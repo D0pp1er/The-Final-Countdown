@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Countdown</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Space+Grotesk:wght@300;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:    #d37da8;
+      --teal:    #4ea7b7;
+      --cream:   #f7edf4;
+      --white:   #ffffff;
+      --dark:    #2e4959;
+      --text:    #1f3240;
+      --overlay: rgba(247, 236, 242, 0.78);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--cream);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── SLIDESHOW ─────────────────────────────────────── */
+    #slideshow {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.4s ease;
+      animation: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      animation: kenBurns 8s ease-in-out forwards;
+    }
+
+    @keyframes kenBurns {
+      from { transform: scale(1);    }
+      to   { transform: scale(1.07); }
+    }
+
+    /* Gradient overlay — heavier at top and bottom */
+    #slideshow::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom,
+          rgba(243, 224, 236, 0.92) 0%,
+          rgba(255, 255, 255, 0.40) 40%,
+          rgba(255, 255, 255, 0.40) 60%,
+          rgba(78, 167, 183, 0.72) 100%
+        );
+      z-index: 1;
+    }
+
+    /* ── LAYOUT ────────────────────────────────────────── */
+    #app {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100vh;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+    }
+
+    /* ── HEADER ────────────────────────────────────────── */
+    #site-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 300;
+      font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--pink);
+      opacity: 0.9;
+    }
+
+    /* ── TIMER ─────────────────────────────────────────── */
+    #timer-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #timer {
+      display: flex;
+      gap: clamp(1rem, 4vw, 3rem);
+      align-items: flex-end;
+    }
+
+    .unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .unit-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: clamp(3rem, 10vw, 7.5rem);
+      line-height: 1;
+      color: var(--pink);
+      letter-spacing: -0.01em;
+      transition: transform 0.12s ease, color 0.12s ease;
+    }
+
+    .unit-num.tick {
+      transform: scale(1.04);
+      color: #e8c26a;
+    }
+
+    .unit-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 300;
+      font-size: clamp(0.55rem, 1.2vw, 0.72rem);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dark);
+      opacity: 0.7;
+    }
+
+    .sep {
+      font-size: clamp(2rem, 7vw, 5rem);
+      color: var(--teal);
+      opacity: 0.45;
+      line-height: 1;
+      padding-bottom: 0.55rem;
+      font-weight: 300;
+    }
+
+    #countdown-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 300;
+      font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dark);
+      opacity: 0.65;
+      margin-top: 0.6rem;
+    }
+
+    /* Completion message */
+    #completion {
+      display: none;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: clamp(2rem, 6vw, 4.5rem);
+      color: var(--pink);
+      line-height: 1.2;
+    }
+
+    /* ── QUOTE ─────────────────────────────────────────── */
+    #quote-block {
+      max-width: 680px;
+      width: 100%;
+    }
+
+    #quote-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.1rem, 2.8vw, 1.65rem);
+      line-height: 1.55;
+      color: var(--text);
+      opacity: 0;
+      transition: opacity 0.9s ease;
+      margin-bottom: 0.8rem;
+    }
+
+    #quote-author {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 300;
+      font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      opacity: 0;
+      transition: opacity 0.9s ease;
+    }
+
+    #quote-text.visible,
+    #quote-author.visible {
+      opacity: 1;
+    }
+
+    /* ── SLIDE DOTS ────────────────────────────────────── */
+    #dots {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 1.2rem;
+      justify-content: center;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--teal);
+      opacity: 0.28;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .dot.active {
+      opacity: 1;
+      background: var(--pink);
+      transform: scale(1.35);
+    }
+
+    /* ── REDUCED MOTION ────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .slide.active { animation: none; }
+      .unit-num.tick { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="slideshow"></div>
+
+<div id="app">
+
+  <div id="site-title"><!-- filled by JS --></div>
+
+  <div id="timer-block">
+    <div id="timer">
+      <div class="unit">
+        <span class="unit-num" id="days">00</span>
+        <span class="unit-label">Days</span>
+      </div>
+      <span class="sep">:</span>
+      <div class="unit">
+        <span class="unit-num" id="hours">00</span>
+        <span class="unit-label">Hours</span>
+      </div>
+      <span class="sep">:</span>
+      <div class="unit">
+        <span class="unit-num" id="minutes">00</span>
+        <span class="unit-label">Minutes</span>
+      </div>
+      <span class="sep">:</span>
+      <div class="unit">
+        <span class="unit-num" id="seconds">00</span>
+        <span class="unit-label">Seconds</span>
+      </div>
+    </div>
+    <div id="countdown-label">until the big day</div>
+    <div id="completion"></div>
+  </div>
+
+  <div id="quote-block">
+    <p id="quote-text"></p>
+    <p id="quote-author"></p>
+    <div id="dots"></div>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   EASY EDIT ZONE — only change things in this section
+================================================================ */
+
+// Target date & time for the countdown (ISO format: YYYY-MM-DDTHH:MM:SS)
+const TARGET_DATE = "2026-07-17T12:30:00";
+
+// Text shown at the very top of the page
+const SITE_TITLE = "Rahi & Nodi's Wedding Countdown";
+
+// Small label under the timer
+const COUNTDOWN_LABEL = "until we say 'Kobul'";
+
+// Message shown when the countdown hits zero
+const COMPLETION_MESSAGE = "The wedding day is here!";
+
+// How long each slide is shown (milliseconds). Default: 6000 = 6 seconds
+const SLIDE_DURATION = 6000;
+
+// Slides: add or remove objects below.
+// image → path relative to index.html, e.g. "img/photo1.jpg"
+// quote → the quote text
+// author → attribution (leave "" to hide)
+const SLIDES = [
+  {
+    image: "img/First Rickshaw Ride.jpeg",
+    quote: "Two hearts, one journey — every moment leads us closer.",
+    author: "Wedding Vows"
+  },
+  {
+    image: "img/First Rose.jpeg",
+    quote: "Love is the spark that turns a moment into a lifetime.",
+    author: "Bride & Groom"
+  },
+  {
+    image: "img/First Surprise from HER.jpeg",
+    quote: "Today we celebrate the beginning of forever together.",
+    author: "Wedding Day"
+  },
+  {
+    image: "img/Hand in Hand.jpeg",
+    quote: "With you, every day feels like the most beautiful ceremony.",
+    author: "For always"
+  },
+];
+
+/* ================================================================
+   END OF EASY EDIT ZONE — no need to edit below this line
+================================================================ */
+
+// ── INIT ──────────────────────────────────────────────────────
+document.getElementById('site-title').textContent = SITE_TITLE;
+document.getElementById('countdown-label').textContent = COUNTDOWN_LABEL;
+
+// ── SLIDESHOW ─────────────────────────────────────────────────
+const slideshowEl = document.getElementById('slideshow');
+const quoteText   = document.getElementById('quote-text');
+const quoteAuthor = document.getElementById('quote-author');
+const dotsEl      = document.getElementById('dots');
+
+let currentSlide = 0;
+let slideEls = [];
+
+// Build slide divs and dots
+SLIDES.forEach((s, i) => {
+  const div = document.createElement('div');
+  div.className = 'slide';
+  div.style.backgroundImage = `url('${s.image}')`;
+
+  // Fallback gradient if image is missing
+  div.style.background = `url('${s.image}') center/cover no-repeat, linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)`;
+
+  slideshowEl.appendChild(div);
+  slideEls.push(div);
+
+  const dot = document.createElement('span');
+  dot.className = 'dot' + (i === 0 ? ' active' : '');
+  dotsEl.appendChild(dot);
+});
+
+function activateSlide(index) {
+  // Fade out quote
+  quoteText.classList.remove('visible');
+  quoteAuthor.classList.remove('visible');
+
+  // Deactivate old slide
+  slideEls.forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+
+  // Force Ken Burns reflow — remove and re-add active
+  const slide = slideEls[index];
+  void slide.offsetWidth; // reflow trick
+  slide.classList.add('active');
+  document.querySelectorAll('.dot')[index].classList.add('active');
+
+  // Update quote after slight delay for fade-in
+  const { quote, author } = SLIDES[index];
+  setTimeout(() => {
+    quoteText.textContent = `"${quote}"`;
+    quoteAuthor.textContent = author ? `— ${author}` : '';
+    quoteText.classList.add('visible');
+    if (author) quoteAuthor.classList.add('visible');
+  }, 500);
+}
+
+// First slide immediately
+activateSlide(0);
+
+// Cycle slides
+setInterval(() => {
+  currentSlide = (currentSlide + 1) % SLIDES.length;
+  activateSlide(currentSlide);
+}, SLIDE_DURATION);
+
+// ── COUNTDOWN ─────────────────────────────────────────────────
+const target     = new Date(TARGET_DATE).getTime();
+const daysEl     = document.getElementById('days');
+const hoursEl    = document.getElementById('hours');
+const minutesEl  = document.getElementById('minutes');
+const secondsEl  = document.getElementById('seconds');
+const timerEl    = document.getElementById('timer');
+const labelEl    = document.getElementById('countdown-label');
+const completionEl = document.getElementById('completion');
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function pulse(el) {
+  el.classList.remove('tick');
+  void el.offsetWidth;
+  el.classList.add('tick');
+  setTimeout(() => el.classList.remove('tick'), 130);
+}
+
+function tick() {
+  const now  = Date.now();
+  const diff = target - now;
+
+  if (diff <= 0) {
+    timerEl.style.display = 'none';
+    labelEl.style.display = 'none';
+    completionEl.style.display = 'block';
+    completionEl.textContent = COMPLETION_MESSAGE;
+    return;
+  }
+
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000)  / 60000);
+  const s = Math.floor((diff % 60000)    / 1000);
+
+  const newD = pad(d);
+  const newH = pad(h);
+  const newM = pad(m);
+  const newS = pad(s);
+
+  if (daysEl.textContent    !== newD) { daysEl.textContent    = newD; pulse(daysEl);    }
+  if (hoursEl.textContent   !== newH) { hoursEl.textContent   = newH; pulse(hoursEl);   }
+  if (minutesEl.textContent !== newM) { minutesEl.textContent = newM; pulse(minutesEl); }
+  if (secondsEl.textContent !== newS) { secondsEl.textContent = newS; pulse(secondsEl); }
+}
+
+tick();
+setInterval(tick, 1000);
+</script>
+
+</body>
+</html>
